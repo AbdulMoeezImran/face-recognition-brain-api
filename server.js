@@ -1,50 +1,28 @@
-import express, { response } from 'express';
-import bodyParser from 'body-parser';
-import bcrypt from "bcrypt-nodejs";
-import cors from 'cors';
-import knex from 'knex';
-import { handleRegister } from './controllers/register.js';
-import { handleSignin } from './controllers/signin.js';
-import { handleProfile } from './controllers/profile.js';
-import { handleApiCall, handleImage } from './controllers/image.js';
+import http from 'http';
+import app from './app.js'
+import mongoose from 'mongoose';
 
 
-const db = knex({
-    client: 'pg',
-    connection: {
-        host: '127.0.0.1',
-        port: 5432,
-        user: 'moeez',
-        password: 'admin',
-        database: 'smart-brain'
-    }
+const PORT = 3001;
+
+const MONGO_URL = 'mongodb+srv://smart-brain-api:!Q2w3e4r@smartbraincluster.6ysl47u.mongodb.net/?retryWrites=true&w=majority';
+
+mongoose.connection.once('open', () => {
+    console.log('MongoDB connection ready!');
 });
 
-
-const app = express();
-
-app.use(bodyParser.json());
-app.use(cors());
-
-
-app.get("/", (req, res) => {
-    db("users").then(user => {
-        res.json(user);
-    }).catch(err => {
-        console.error(err);
-        res.status(500).send("An error occurred.");
-    });
+mongoose.connection.on('error', (err) => {
+    console.error('err');
 });
 
+const server = http.createServer(app);
 
-app.post("/signin", handleSignin(db, bcrypt));
-app.post("/register", handleRegister(db, bcrypt));
-app.get('/profile/:id', handleProfile(db));
-app.put('/image', handleImage(db));
-app.post('/imageurl', handleApiCall);
+const startServer = async () => {
+    await mongoose.connect(MONGO_URL);
 
+    server.listen(PORT, () => {
+        console.log(`Listening on port ${PORT}...`);
+    })
+}
 
-
-app.listen(3001, () => {
-    console.log('app is running on port 3001');
-});
+startServer();
